@@ -115,7 +115,7 @@ if test "x$shuppan_search_libzre" = "xyes"; then
         CFLAGS="-I${with_libzre}/include ${CFLAGS}"
         LDFLAGS="-L${with_libzre}/lib ${LDFLAGS}"
     else
-        AC_MSG_ERROR([${with_libzre}/include/zre.h not found. Please check libzre prefix])
+        AC_MSG_ERROR([${with_libzre}/include/zre/zre.h not found. Please check libzre prefix])
     fi
 fi
 AC_CHECK_LIB(zre, zre_msg_test, ,[AC_MSG_ERROR([cannot link with -lzre, install libzre.])])

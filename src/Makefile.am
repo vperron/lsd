@@ -7,10 +7,11 @@ include_HEADERS = \
     ../include/shuppan.h
 
 libshuppan_la_SOURCES = \
-    shuppan_service.c 
+    shuppan.c 
 
 INCLUDES = -I$(top_srcdir)/include
-bin_PROGRAMS = shuppan_tester
+bin_PROGRAMS = shuppan_tester shuppan_listener
 shuppan_tester_LDADD = libshuppan.la
+shuppan_listener_LDADD = libshuppan.la
 
 TESTS = shuppan_selftest

@@ -59,8 +59,6 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 
 			char *event = zmsg_popstr (incoming);
 			
-				zclock_log ("I: Event: %s ", event);
-
 			if (streq (event, "ENTER")) {
 				//  Always say hello to new peer
 				to_peer = zmsg_popstr (incoming);
@@ -128,29 +126,13 @@ int main (int argc, char *argv [])
 	zclock_log ("I: Started interface %08x", pipe);
 
   zre_interface_join(interface, DEFGROUP);
-	zclock_sleep (500);
   zre_interface_join(interface, DEFGROUP2);
 	zclock_sleep (500);
-
-	zmsg_t* outgoing = zmsg_new();
-	zmsg_addstr (outgoing, DEFGROUP);
-	zmsg_addstr (outgoing, "Hello World !");
-	zre_interface_shout(interface, &outgoing);
-	zclock_sleep (500);
-
-	zmsg_t* outgoing2 = zmsg_new();
-	zmsg_addstr (outgoing2, DEFGROUP2);
-	zmsg_addstr (outgoing2, "Hello group 2 !");
-	zre_interface_shout(interface, &outgoing2);
-	zclock_sleep (500);
- 
 
 	while (!zctx_interrupted) {
 		zclock_sleep (500);
 	}
 
-	zre_interface_leave(interface, DEFGROUP);
-	zre_interface_leave(interface, DEFGROUP2);
 	zstr_send (pipe, "STOP");
 
 	zre_interface_destroy (&interface);
