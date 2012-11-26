@@ -38,20 +38,26 @@ struct _shuppan_handle_t {
 	zctx_t* ctx;
 	zre_interface_t* interface;
 	void* pipe;
-	shuppan_callback_fn* callback;
+	shuppan_info_callback_fn* info_callback;
+	zhash_t* callbacks;
 };
 
+typedef struct _fn_ptr_wrapper_t {
+	shuppan_subscribe_callback_fn* fn;
+} fn_ptr_wrapper_t;
+	
 
 static void interface_task (void *args, zctx_t *ctx, void *pipe);
 
 
 //  ---------------------------------------------------------------------
 //  Init
-shuppan_handle_t* shuppan_init(shuppan_callback_fn* fn) 
+shuppan_handle_t* shuppan_init(shuppan_info_callback_fn* fn) 
 {
 	shuppan_handle_t* self = (shuppan_handle_t *) zmalloc (sizeof (shuppan_handle_t));
+	self->info_callback = fn;
 	self->ctx = zctx_new();
-	self->callback = fn;
+	self->callbacks = zhash_new();
 	self->interface = zre_interface_new();
 	self->pipe = zthread_fork (self->ctx, interface_task, self);
 	return self;
@@ -62,9 +68,12 @@ shuppan_handle_t* shuppan_init(shuppan_callback_fn* fn)
 //  Destroy node
 void shuppan_destroy(shuppan_handle_t* self) 
 {
+	assert(self);
+
 	zstr_send (self->pipe, "STOP");
 	zre_interface_destroy (&(self->interface));
 	zsocket_destroy (self->ctx, self->pipe);
+	zhash_destroy(&self->callbacks);
 	zctx_destroy (&self->ctx);
 	free(self);
 }
@@ -72,8 +81,18 @@ void shuppan_destroy(shuppan_handle_t* self)
 //  ---------------------------------------------------------------------
 //  Join group 
 //  TODO: Later on may be good to ghave one callback per joined group
-void shuppan_join(shuppan_handle_t* self, const char* group) 
+void shuppan_join(shuppan_handle_t* self, const char* group, shuppan_subscribe_callback_fn* fn) 
 {
+	fn_ptr_wrapper_t* wrapper;
+
+	assert(self);
+	assert(group);
+
+	if(fn) {
+		wrapper = zmalloc(sizeof(fn_ptr_wrapper_t));
+		wrapper->fn = fn;
+		zhash_insert(self->callbacks, group, wrapper);
+	}
   zre_interface_join(self->interface, group);
 }
 
@@ -81,16 +100,23 @@ void shuppan_join(shuppan_handle_t* self, const char* group)
 //  Leave group
 void shuppan_leave(shuppan_handle_t* self, const char* group)
 {
+	assert(self);
+	assert(group);
 	zre_interface_leave(self->interface, group);
 }
 
 //  ---------------------------------------------------------------------
 //  Publish to listeners (members of a group)
-void shuppan_publish(shuppan_handle_t* self, const char* group, const char* msg) 
+void shuppan_publish(shuppan_handle_t* self, const char* group, const void* msg, size_t len) 
 {
+	assert(self);
+	assert(group);
+
 	zmsg_t* outgoing = zmsg_new();
 	zmsg_addstr (outgoing, group);
-	zmsg_addstr (outgoing, msg);
+	if(msg && len) {
+		zmsg_addmem(outgoing, msg, len);
+	}
 	zre_interface_shout(self->interface, &outgoing);
 	zmsg_destroy(&outgoing);
 }
@@ -100,10 +126,12 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 {
 	shuppan_handle_t *self = (shuppan_handle_t*) args;
 
-	int64_t counter = 0;
-	char *to_peer = NULL;        //  Either of these set,
-	char *to_group = NULL;       //    and we set a message
-	char *cookie = NULL;
+	assert(self);
+
+	char *peer = NULL;
+	char *group = NULL;
+	zframe_t* msg_frame = NULL;
+	fn_ptr_wrapper_t* fn_wrapper = NULL;
 
 	zmq_pollitem_t pollitems [] = {
 		{ pipe,                             0, ZMQ_POLLIN, 0 },
@@ -112,12 +140,12 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 
 	while (!zctx_interrupted) {
 		if (zmq_poll (pollitems, 2, randof (1000) * ZMQ_POLL_MSEC) == -1) {
-			printf ("I: Interrupted by user action.");
+			printf ("I: Interrupted by user action.\n");
 			break;              //  Interrupted
 		}
 
 		if (pollitems [0].revents & ZMQ_POLLIN) {
-			printf ("I: Interrupted by parent.");
+			printf ("I: Interrupted by parent.\n");
 			break;              //  Any command fom parent means EXIT
 		}
 
@@ -125,64 +153,76 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 		if (pollitems [1].revents & ZMQ_POLLIN) {
 			zmsg_t *incoming = zre_interface_recv (self->interface);
 			if (!incoming) {
-				printf ("I: Interrupted before end of read.");
+				printf ("I: Interrupted before end of read.\n");
 				break;              //  Interrupted
 			}
 
 			char *event = zmsg_popstr (incoming);
 			if (streq (event, "ENTER")) {
-				//  Always say hello to new peer
-				to_peer = zmsg_popstr (incoming);
-				debugLog ("I: ENTER '%s'", to_peer);
+				peer = zmsg_popstr (incoming);
+				debugLog ("I: ENTER '%s'", peer);
+				if(self->info_callback) {
+					(*self->info_callback)(event,peer,NULL,0);
+				}
 			} else if (streq (event, "EXIT")) {
-				//  Always try talk to departed peer
-				to_peer = zmsg_popstr (incoming);
-				debugLog ("I: EXIT '%s'", to_peer);
+				peer = zmsg_popstr (incoming);
+				debugLog ("I: EXIT '%s'", peer);
+				if(self->info_callback) {
+					(*self->info_callback)(event,peer,NULL,0);
+				}
 			} else if (streq (event, "WHISPER")) {
-				to_peer = zmsg_popstr (incoming);
-				debugLog ("I: WHISPER '%s'", to_peer);
+				peer = zmsg_popstr (incoming);
+				msg_frame = zmsg_pop (incoming);
+				debugLog ("I: WHISPER '%s' cookie '%s'", peer, zframe_strhex(msg_frame));
+				if(self->info_callback) {
+					(*self->info_callback)(event,peer,zframe_data(msg_frame),zframe_size(msg_frame));
+				}
 			} else 	if (streq (event, "SHOUT")) {
-				to_peer = zmsg_popstr (incoming);
-				to_group = zmsg_popstr (incoming);
-				cookie = zmsg_popstr (incoming); 
-				self->callback(to_group, to_peer, cookie);
-				debugLog ("I: SHOUT from '%s' group '%s' cookie '%s'", to_peer, to_group, cookie);
+				peer = zmsg_popstr (incoming);
+				group = zmsg_popstr (incoming);
+				msg_frame = zmsg_pop (incoming); 
+				debugLog ("I: SHOUT from '%s' group '%s' cookie '%s' ", peer, group, zframe_strhex(msg_frame));
+				if(self->info_callback) {
+					(*self->info_callback)(event,peer,group,strlen(group));
+				}
+				fn_wrapper =  (fn_ptr_wrapper_t* ) zhash_lookup(self->callbacks, group);
+				if(fn_wrapper) {
+					shuppan_subscribe_callback_fn* fn = fn_wrapper->fn;
+					if(fn) {
+						(*fn)(self,group,peer,zframe_data(msg_frame), zframe_size(msg_frame));
+					}
+				}
 			} else if (streq (event, "JOIN")) {
-				char *from_peer = zmsg_popstr (incoming);
-				char *group = zmsg_popstr (incoming);
-				debugLog ("I: JOIN '%s - %s'", from_peer, group);
-				free (from_peer);
-				free (group);
+				peer = zmsg_popstr (incoming);
+				group = zmsg_popstr (incoming);
+				debugLog ("I: JOIN '%s - %s'", peer, group);
+				if(self->info_callback) {
+					(*self->info_callback)(event,peer,group,strlen(group));
+				}
 			} else if (streq (event, "LEAVE")) {
-				char *from_peer = zmsg_popstr (incoming);
-				char *group = zmsg_popstr (incoming);
-				debugLog ("I: LEAVE '%s - %s'", from_peer, group);
-				free (from_peer);
-				free (group);
+				peer = zmsg_popstr (incoming);
+				group = zmsg_popstr (incoming);
+				debugLog ("I: LEAVE '%s - %s'", peer, group);
+				if(self->info_callback) {
+					(*self->info_callback)(event,peer,group,strlen(group));
+				}
 			}
 
+			if(peer) {
+				free(peer);
+				peer = NULL;
+			}
+			if(group) {
+				free(group);
+				group = NULL;
+			}
+			if(msg_frame) {
+				zframe_destroy(&msg_frame);
+				msg_frame = NULL;
+			}
+			
 			free (event);
 			zmsg_destroy (&incoming);
-
-			//  Send outgoing messages if needed
-			if (to_peer) {
-				zmsg_t *outgoing = zmsg_new ();
-				zmsg_addstr (outgoing, to_peer);
-				zmsg_addstr (outgoing, "%lu", counter++);
-				free (to_peer);
-				to_peer = NULL;
-			}
-			if (to_group) {
-				zmsg_t *outgoing = zmsg_new ();
-				zmsg_addstr (outgoing, to_group);
-				zmsg_addstr (outgoing, "%lu", counter++);
-				free (to_group);
-				to_group = NULL;
-			}
-			if (cookie) {
-				free (cookie);
-				cookie = NULL;
-			}
 		}
 	}
 }

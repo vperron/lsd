@@ -22,31 +22,29 @@
 
 #include "shuppan.h"
 
-#define DEFGROUP "MYGROUP"
-#define DEFGROUP2 "GROUP2"
-
-static void callback (char* group, char* node, char* msg)
-{
-	printf("Received shout: %s - %s - %s\n", group, node, msg);
-}
+#define GROUP_0 "GROUP0"
+#define GROUP_1 "GROUP1"
 
 int main (int argc, char *argv [])
 {
 
-	shuppan_handle_t* handle = shuppan_init(callback);
+	const char* msg_fmt= "Hello group %s !";
+	char msg_0[50], msg_1[50];
 
-	shuppan_join(handle, DEFGROUP);
-	zclock_sleep (500);
+	shuppan_handle_t* handle = shuppan_init(NULL);
 
-	shuppan_publish(handle, DEFGROUP, "Hello World !");
+	zclock_sleep (500); 
 
-	zclock_sleep (500);
+	sprintf(msg_0,msg_fmt, GROUP_0);
+	sprintf(msg_1,msg_fmt, GROUP_1);
+
+	shuppan_publish(handle, GROUP_0, (const void*)msg_0,strlen(msg_0));
+	shuppan_publish(handle, GROUP_1, (const void*)msg_1,strlen(msg_1));
 
 	while (!zctx_interrupted) {
 		zclock_sleep (500);
 	}
 
-	shuppan_leave(handle, DEFGROUP);
 	shuppan_destroy(handle);
 
 	return 0;

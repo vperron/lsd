@@ -21,24 +21,42 @@
 
 #include "shuppan.h"
 
-#define DEFGROUP "MYGROUP"
+#define GROUP_0 "GROUP0"
+#define GROUP_1 "GROUP1"
 
 
-static void callback (char* group, char* node, char* msg)
+static void info_callback (const char* event, const char* node, const void* msg, size_t len)
 {
-	printf("Received shout: %s - %s - %s\n", group, node, msg);
+	printf("Event %s, node %s, len %d\n", event, node, (int)len);
+}
+
+static void sub_callback_0(
+		shuppan_handle_t* handle, const char* group, const char* peer, 
+		const void* data, size_t len) 
+{
+	printf("SUBSCRIBED CHANNEL 0 %s, from node %s : len %d\n", group, peer, (int)len);
+}
+
+static void sub_callback_1(
+		shuppan_handle_t* handle, const char* group, const char* peer, 
+		const void* data, size_t len) 
+{
+	printf("SUBSCRIBED CHANNEL 1 %s, from node %s : len %d\n", group, peer, (int)len);
 }
 
 int main (int argc, char *argv [])
 {
-	shuppan_handle_t* handle = shuppan_init(callback);
-	shuppan_join(handle, DEFGROUP);
+	shuppan_handle_t* handle = shuppan_init(info_callback);
+
+	shuppan_join(handle, GROUP_0, sub_callback_0);
+	shuppan_join(handle, GROUP_1, sub_callback_1);
 
 	while (!zctx_interrupted) {
 		zclock_sleep (500);
 	}
 
-	shuppan_leave(handle, DEFGROUP);
+	shuppan_leave(handle, GROUP_0);
+	shuppan_leave(handle, GROUP_1);
 	shuppan_destroy(handle);
 	return 0;
 }

@@ -44,22 +44,29 @@ extern "C" {
 #endif
 
 typedef struct _shuppan_handle_t shuppan_handle_t;
-typedef void (shuppan_callback_fn) (char* in_group, char* from_peer, char* cookie);
+
+typedef void (shuppan_info_callback_fn) 
+	(const char* event, const char* peer, const void* arg0, size_t len);
+
+typedef void (shuppan_subscribe_callback_fn) 
+	(shuppan_handle_t* handle, const char* group, 
+	 const char* peer, const void* data, size_t len);
+
 
 // Init node, announce to network
-shuppan_handle_t* shuppan_init(shuppan_callback_fn* fn);
+shuppan_handle_t* shuppan_init(shuppan_info_callback_fn* fn);
 
 // Destroy node
 void shuppan_destroy(shuppan_handle_t* handle);
 
 // Join group 
-void shuppan_join(shuppan_handle_t* self, const char* group);
+void shuppan_join(shuppan_handle_t* self, const char* group, shuppan_subscribe_callback_fn* callback);
 
 // Leave group
 void shuppan_leave(shuppan_handle_t* self, const char* group);
 
 // Publish to listeners (members of a group)
-void shuppan_publish(shuppan_handle_t* self, const char* group, const char* msg);
+void shuppan_publish(shuppan_handle_t* self, const char* group, const void* msg, size_t len);
 
 #ifdef __cplusplus
 }
