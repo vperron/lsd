@@ -33,7 +33,6 @@
 #define debugLog(fmt, ...) 
 #endif
 
-
 struct _shuppan_handle_t {
 	zctx_t* ctx;
 	zre_interface_t* interface;
