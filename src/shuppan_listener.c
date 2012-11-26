@@ -51,9 +51,7 @@ int main (int argc, char *argv [])
 	shuppan_join(handle, GROUP_0, sub_callback_0);
 	shuppan_join(handle, GROUP_1, sub_callback_1);
 
-	while (!zctx_interrupted) {
-		zclock_sleep (500);
-	}
+		zclock_sleep (10000);
 
 	shuppan_leave(handle, GROUP_0);
 	shuppan_leave(handle, GROUP_1);

@@ -80,7 +80,6 @@ void shuppan_destroy(shuppan_handle_t* self)
 
 //  ---------------------------------------------------------------------
 //  Join group 
-//  TODO: Later on may be good to ghave one callback per joined group
 void shuppan_join(shuppan_handle_t* self, const char* group, shuppan_subscribe_callback_fn* fn) 
 {
 	fn_ptr_wrapper_t* wrapper;
@@ -92,7 +91,9 @@ void shuppan_join(shuppan_handle_t* self, const char* group, shuppan_subscribe_c
 		wrapper = zmalloc(sizeof(fn_ptr_wrapper_t));
 		wrapper->fn = fn;
 		zhash_insert(self->callbacks, group, wrapper);
+		zhash_freefn(self->callbacks, group, free);
 	}
+
   zre_interface_join(self->interface, group);
 }
 
@@ -102,6 +103,7 @@ void shuppan_leave(shuppan_handle_t* self, const char* group)
 {
 	assert(self);
 	assert(group);
+	zhash_delete(self->callbacks, group);
 	zre_interface_leave(self->interface, group);
 }
 
@@ -173,7 +175,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 			} else if (streq (event, "WHISPER")) {
 				peer = zmsg_popstr (incoming);
 				msg_frame = zmsg_pop (incoming);
-				debugLog ("I: WHISPER '%s' cookie '%s'", peer, zframe_strhex(msg_frame));
+				debugLog ("I: WHISPER '%s' msglen %d", peer, (int)zframe_size(msg_frame));
 				if(self->info_callback) {
 					(*self->info_callback)(event,peer,zframe_data(msg_frame),zframe_size(msg_frame));
 				}
@@ -181,7 +183,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 				peer = zmsg_popstr (incoming);
 				group = zmsg_popstr (incoming);
 				msg_frame = zmsg_pop (incoming); 
-				debugLog ("I: SHOUT from '%s' group '%s' cookie '%s' ", peer, group, zframe_strhex(msg_frame));
+				debugLog ("I: SHOUT from '%s' group '%s' msglen %d", peer, group, (int)zframe_size(msg_frame));
 				if(self->info_callback) {
 					(*self->info_callback)(event,peer,group,strlen(group));
 				}
