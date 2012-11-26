@@ -21,6 +21,7 @@
 
 #include "shuppan.h"
 
+
 #ifdef DEBUG
 #define debugLog(fmt, ...) \
 	do { \
@@ -53,7 +54,6 @@ shuppan_handle_t* shuppan_init(shuppan_callback_fn* fn)
 	self->callback = fn;
 	self->interface = zre_interface_new();
 	self->pipe = zthread_fork (self->ctx, interface_task, self);
-	debugLog ("I: Started interface %08x", pipe);
 	return self;
 }
 

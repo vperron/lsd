@@ -135,7 +135,7 @@ shuppan_install_man="yes"
 
 
 # Set some default features required by libzre code.
-CPPFLAGS="-D_REENTRANT -D_THREAD_SAFE $CPPFLAGS"
+CPPFLAGS="-D_REENTRANT -D_THREAD_SAFE -DDEBUG $CPPFLAGS"
 
 # OS-specific tests
 case "${host_os}" in
