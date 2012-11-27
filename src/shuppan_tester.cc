@@ -47,7 +47,7 @@ int main (int argc, char *argv [])
 	if (argc > 2)
 		max_loops = atoi (argv [2]);
 
-	handles = zmalloc(max_handles*sizeof(shuppan_handle_t*));
+	handles = (shuppan_handle_t**) zmalloc(max_handles*sizeof(shuppan_handle_t*));
 
 	while(max_loops > 0) {
 

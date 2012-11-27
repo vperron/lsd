@@ -87,7 +87,7 @@ void shuppan_join(shuppan_handle_t* self, const char* group, shuppan_subscribe_c
 	assert(group);
 
 	if(fn) {
-		wrapper = zmalloc(sizeof(fn_ptr_wrapper_t));
+		wrapper = (fn_ptr_wrapper_t*) zmalloc(sizeof(fn_ptr_wrapper_t));
 		wrapper->fn = fn;
 		zhash_insert(self->callbacks, group, wrapper);
 		zhash_freefn(self->callbacks, group, free);
