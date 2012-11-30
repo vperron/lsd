@@ -21,6 +21,7 @@
 
 #include "shuppan.h"
 
+#include "zre/zre.h"
 
 #ifdef DEBUG
 #define debugLog(fmt, ...) \
@@ -33,11 +34,17 @@
 #define debugLog(fmt, ...) 
 #endif
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _shuppan_handle_t {
 	zctx_t* ctx;
 	zre_interface_t* interface;
 	void* pipe;
 	shuppan_info_callback_fn* info_callback;
+	void* class_ptr;
 	zhash_t* callbacks;
 };
 
@@ -51,7 +58,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe);
 
 //  ---------------------------------------------------------------------
 //  Init
-shuppan_handle_t* shuppan_init(shuppan_info_callback_fn* fn) 
+shuppan_handle_t* shuppan_init(shuppan_info_callback_fn* fn, void* reserved) 
 {
 	shuppan_handle_t* self = (shuppan_handle_t *) zmalloc (sizeof (shuppan_handle_t));
 	self->info_callback = fn;
@@ -59,6 +66,7 @@ shuppan_handle_t* shuppan_init(shuppan_info_callback_fn* fn)
 	self->callbacks = zhash_new();
 	self->interface = zre_interface_new();
 	self->pipe = zthread_fork (self->ctx, interface_task, self);
+	self->class_ptr = reserved;
 	return self;
 }
 
@@ -108,7 +116,7 @@ void shuppan_leave(shuppan_handle_t* self, const char* group)
 
 //  ---------------------------------------------------------------------
 //  Publish to listeners (members of a group)
-void shuppan_publish(shuppan_handle_t* self, const char* group, const void* msg, size_t len) 
+void shuppan_publish(shuppan_handle_t* self, const char* group, const char * msg, size_t len) 
 {
 	assert(self);
 	assert(group);
@@ -141,12 +149,12 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 
 	while (!zctx_interrupted) {
 		if (zmq_poll (pollitems, 2, randof (1000) * ZMQ_POLL_MSEC) == -1) {
-			printf ("I: Interrupted by user action.\n");
+			debugLog ("I: Interrupted by user action.\n");
 			break;              //  Interrupted
 		}
 
 		if (pollitems [0].revents & ZMQ_POLLIN) {
-			printf ("I: Interrupted by parent.\n");
+			debugLog ("I: Interrupted by parent.\n");
 			break;              //  Any command fom parent means EXIT
 		}
 
@@ -154,7 +162,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 		if (pollitems [1].revents & ZMQ_POLLIN) {
 			zmsg_t *incoming = zre_interface_recv (self->interface);
 			if (!incoming) {
-				printf ("I: Interrupted before end of read.\n");
+				debugLog ("I: Interrupted before end of read.\n");
 				break;              //  Interrupted
 			}
 
@@ -163,20 +171,20 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 				peer = zmsg_popstr (incoming);
 				debugLog ("I: ENTER '%s'", peer);
 				if(self->info_callback) {
-					(*self->info_callback)(event,peer,NULL,0);
+					(*self->info_callback)(self,event,peer,NULL,0, self->class_ptr);
 				}
 			} else if (streq (event, "EXIT")) {
 				peer = zmsg_popstr (incoming);
 				debugLog ("I: EXIT '%s'", peer);
 				if(self->info_callback) {
-					(*self->info_callback)(event,peer,NULL,0);
+					(*self->info_callback)(self,event,peer,NULL,0,self->class_ptr);
 				}
 			} else if (streq (event, "WHISPER")) {
 				peer = zmsg_popstr (incoming);
 				msg_frame = zmsg_pop (incoming);
 				debugLog ("I: WHISPER '%s' msglen %d", peer, (int)zframe_size(msg_frame));
 				if(self->info_callback) {
-					(*self->info_callback)(event,peer,zframe_data(msg_frame),zframe_size(msg_frame));
+					(*self->info_callback)(self,event,peer,(const char*)zframe_data(msg_frame),zframe_size(msg_frame),self->class_ptr);
 				}
 			} else 	if (streq (event, "SHOUT")) {
 				peer = zmsg_popstr (incoming);
@@ -184,13 +192,13 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 				msg_frame = zmsg_pop (incoming); 
 				debugLog ("I: SHOUT from '%s' group '%s' msglen %d", peer, group, (int)zframe_size(msg_frame));
 				if(self->info_callback) {
-					(*self->info_callback)(event,peer,group,strlen(group));
+					(*self->info_callback)(self,event,peer,group,strlen(group),self->class_ptr);
 				}
 				fn_wrapper =  (fn_ptr_wrapper_t* ) zhash_lookup(self->callbacks, group);
 				if(fn_wrapper) {
 					shuppan_subscribe_callback_fn* fn = fn_wrapper->fn;
 					if(fn) {
-						(*fn)(self,group,peer,zframe_data(msg_frame), zframe_size(msg_frame));
+						(*fn)(self,group,peer,(const char*)zframe_data(msg_frame), zframe_size(msg_frame),self->class_ptr);
 					}
 				}
 			} else if (streq (event, "JOIN")) {
@@ -198,14 +206,14 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 				group = zmsg_popstr (incoming);
 				debugLog ("I: JOIN '%s - %s'", peer, group);
 				if(self->info_callback) {
-					(*self->info_callback)(event,peer,group,strlen(group));
+					(*self->info_callback)(self,event,peer,group,strlen(group),self->class_ptr);
 				}
 			} else if (streq (event, "LEAVE")) {
 				peer = zmsg_popstr (incoming);
 				group = zmsg_popstr (incoming);
 				debugLog ("I: LEAVE '%s - %s'", peer, group);
 				if(self->info_callback) {
-					(*self->info_callback)(event,peer,group,strlen(group));
+					(*self->info_callback)(self,event,peer,group,strlen(group),self->class_ptr);
 				}
 			}
 
@@ -227,3 +235,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 		}
 	}
 }
+
+#ifdef __cplusplus
+}
+#endif

@@ -9,6 +9,8 @@ include_HEADERS = \
 libshuppan_la_SOURCES = \
     shuppan.cc
 
+libshuppan_la_CPPFLAGS = -Werror
+
 if DISABLE_VERSION
 libshuppan_la_LDFLAGS = -avoid-version
 else

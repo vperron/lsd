@@ -21,16 +21,21 @@
 
 
 #include "shuppan.h"
+#include "zre/zre.h"
 
 
-static void info_callback (const char* event, const char* node, const void* msg, size_t len)
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+static void info_callback (shuppan_handle_t* handle, const char* event, 
+		const char* node, const char * msg, size_t len, void* reserved)
 {
 	printf("Event %s, node %s, len %d\n", event, node, (int)len);
 }
 
-static void sub_callback(
-		shuppan_handle_t* handle, const char* group, const char* peer, 
-		const void* data, size_t len) 
+static void sub_callback(shuppan_handle_t* handle, const char* group, 
+		const char* peer, const char * data, size_t len, void* reserved) 
 {
 	printf("SUBSCRIBED %s, from node %s : len %d\n", group, peer, (int)len);
 }
@@ -63,7 +68,7 @@ int main (int argc, char *argv [])
 			sprintf(msg, "Hello group #%02d !", (int)group_num);
 
 			if(r == 0) {
-				shuppan_publish(handle, group, (const void*)msg,strlen(msg));
+				shuppan_publish(handle, group, (const char *)msg,strlen(msg));
 			} else if(r == 1) {
 				shuppan_join(handle, group, sub_callback);
 			} else if(r == 2) {
@@ -74,7 +79,7 @@ int main (int argc, char *argv [])
 			}
 
 		} else {
-			handles[index] = shuppan_init(info_callback);
+			handles[index] = shuppan_init(info_callback, NULL);
 		}
 
 		zclock_sleep (500);
@@ -92,3 +97,7 @@ int main (int argc, char *argv [])
 
 	return 0;
 }
+
+#ifdef __cplusplus
+}
+#endif
