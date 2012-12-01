@@ -7,9 +7,7 @@ include_HEADERS = \
     ../include/shuppan.h
 
 libshuppan_la_SOURCES = \
-    shuppan.cc
-
-libshuppan_la_CPPFLAGS = -Werror
+    shuppan.c
 
 if DISABLE_VERSION
 libshuppan_la_LDFLAGS = -avoid-version
@@ -24,7 +22,7 @@ LDADD = $(top_builddir)/src/libshuppan.la
 
 noinst_PROGRAMS = shuppan_tester shuppan_listener
 
-shuppan_listener_SOURCES = shuppan_listener.cc
-shuppan_tester_SOURCES = shuppan_tester.cc
+shuppan_listener_SOURCES = shuppan_listener.c
+shuppan_tester_SOURCES = shuppan_tester.c
 
 TESTS = shuppan_selftest
