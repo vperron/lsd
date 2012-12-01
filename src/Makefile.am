@@ -20,9 +20,10 @@ INCLUDES = -I$(top_srcdir)/include
 
 LDADD = $(top_builddir)/src/libshuppan.la
 
-noinst_PROGRAMS = shuppan_tester shuppan_listener
+noinst_PROGRAMS = shuppan_tester shuppan_listener shuppan_sender
 
 shuppan_listener_SOURCES = shuppan_listener.c
+shuppan_sender_SOURCES = shuppan_sender.c
 shuppan_tester_SOURCES = shuppan_tester.c
 
 TESTS = shuppan_selftest

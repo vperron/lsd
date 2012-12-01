@@ -23,5 +23,6 @@ src/stamp-h1
 *.lst
 core
 shuppan_tester
+shuppan_sender
 shuppan_listener
 tags

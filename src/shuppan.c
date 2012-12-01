@@ -192,7 +192,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 				msg_frame = zmsg_pop (incoming); 
 				debugLog ("I: SHOUT from '%s' group '%s' msglen %d", peer, group, (int)zframe_size(msg_frame));
 				if(self->info_callback) {
-					(*self->info_callback)(self,event,peer,group,strlen(group),self->class_ptr);
+					(*self->info_callback)(self,event,peer,group,zframe_size(msg_frame),self->class_ptr);
 				}
 				fn_wrapper =  (fn_ptr_wrapper_t* ) zhash_lookup(self->callbacks, group);
 				if(fn_wrapper) {
