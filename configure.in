@@ -34,16 +34,14 @@ AC_SUBST(PACKAGE_VERSION)
 # http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
 #
 # libshuppan -version-info
-LTVER="0:0:1"
+LTVER="0:1:0"
 AC_SUBST(LTVER)
-
-# Capture c flags
-LIBSHUPPAN_ORIG_CFLAGS="${CFLAGS:-none}"
 
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
+AC_PROG_CXX
 AC_PROG_LIBTOOL
 AC_PROG_SED
 AC_PROG_AWK
@@ -51,16 +49,25 @@ AC_PROG_AWK
 AC_SUBST(LIBTOOL_DEPS)
 AC_LTDL_DLLIB
 
+CFLAGS="${CFLAGS}"
 
 # Gives the ability to suppress the version number : useful for Android bundling
 AC_ARG_ENABLE([version],
-							[AS_HELP_STRING([--enable-version], [embeds version info in the library [default=yes]])])
-
+							[AS_HELP_STRING([--disable-version], [removes version info from the library [default=no]])],
+							[],
+							[enable_version=yes])
 AM_CONDITIONAL(DISABLE_VERSION, test "x$enable_version" = "xno")
 
 # Enables the bundling of czmq, uuid, zyre statically in the .so .
 AC_ARG_ENABLE([embedded],
-							[AS_HELP_STRING([--enable-embedded], [embeds zyre, crypto, fmq, uuid and czmq in the lib [default=no]])])
+							[AS_HELP_STRING([--enable-embedded],[embeds zyre, crypto, fmq, uuid and czmq in the lib [default=no]])],
+							[],
+							[enable_embedded=no])
+
+AC_ARG_ENABLE([python],
+							[AS_HELP_STRING([--disable-python], [disables Python bindings [default=no]])],
+							[],
+							[enable_python=yes])
 
 # libuuid 
 AC_ARG_WITH([libuuid],
@@ -172,7 +179,8 @@ case "${host_os}" in
 				case "${host_os}" in
 					*android*)
 						AC_DEFINE(LIBSHUPPAN_HAVE_ANDROID, 1, [Have Android OS])
-						libshuppan_on_android="yes"
+						libshuppan_host_android="yes"
+						enable_python="no"
 					;;
 				esac
 
@@ -230,7 +238,14 @@ case "${host_os}" in
         ;;
 esac
 
-AM_CONDITIONAL(ON_ANDROID, test "x$libshuppan_on_android" = "xyes")
+AM_CONDITIONAL(HOST_ANDROID, test "x$libshuppan_host_android" = "xyes")
+
+AM_CONDITIONAL(ENABLE_PYTHON, test "x$enable_python" = "xyes")
+if test "x$enable_python" = "xyes"; then
+	SWIG_PYTHON
+	AM_PATH_PYTHON
+	CPPFLAGS="-I../include -I/usr/include/python$PYTHON_VERSION $CPPFLAGS"
+fi
 
 # Other libraries
 
@@ -310,4 +325,4 @@ AC_SUBST(LDFLAGS)
 # Checks for library functions.
 AC_TYPE_SIGNAL
 
-AC_OUTPUT(Makefile src/Makefile src/libshuppan.pc)
+AC_OUTPUT(Makefile src/Makefile src/libshuppan.pc python/Makefile)

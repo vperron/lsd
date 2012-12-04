@@ -17,7 +17,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-autoreconf --install --force --verbose -I config
+autoreconf --install --force --verbose -I config -I m4
 if [ $? -ne 0 ]; then
     echo "autogen.sh: error: autoreconf exited with status $?" 1>&2
     exit 1

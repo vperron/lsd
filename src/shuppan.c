@@ -24,12 +24,21 @@
 #include "zre/zre.h"
 
 #ifdef DEBUG
+#ifdef LIBSHUPPAN_HAVE_ANDROID
+#include <android/log.h>
+#define APPNAME "libshuppan"
+#define debugLog(fmt, ...) \
+	do { \
+		__android_log_print(ANDROID_LOG_DEBUG, APPNAME, \
+				("%s [%s:%d] " fmt "\n", __func__,__FILE__,__LINE__, ##__VA_ARGS__); \
+	} while(0)
+#else
 #define debugLog(fmt, ...) \
 	do { \
 		printf("%s [%s:%d] " fmt "\n", __func__,__FILE__,__LINE__, ##__VA_ARGS__); \
 		fflush(stdout); \
 	} while(0)
-
+#endif
 #else
 #define debugLog(fmt, ...) 
 #endif
