@@ -26,3 +26,7 @@ shuppan_tester
 shuppan_sender
 shuppan_listener
 tags
+python/.deps/
+python/shuppan.py
+python/shuppan_wrap_python.cpp
+python/shuppan_wrap_python.h
