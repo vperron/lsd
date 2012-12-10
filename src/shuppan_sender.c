@@ -32,38 +32,34 @@
 extern "C" {
 #endif
 
-static void info_callback (shuppan_handle_t* handle, const char* event, 
-		const char* node, const char * msg, size_t len, void* reserved)
+static void info_callback (shuppan_handle_t* handle,
+			int event,
+			const char *node,
+			const char *group, 
+			const uint8_t *msg,
+			size_t len,
+			void* reserved)
 {
-	printf("Event %s, node %s, len %d\n", event, node, (int)len);
+	printf("Event %d, node %s, len %d\n", event, node, (int)len);
 }
 
-static void sub_callback_0 (shuppan_handle_t* handle, const char* group, 
-		const char* peer, const char * data, size_t len, void* reserved) 
-{
-	printf("SUBSCRIBED CHANNEL 0 %s, from node %s : len %d\n", group, peer, (int)len);
-}
-
-static void sub_callback_1(shuppan_handle_t* handle, const char* group, 
-		const char* peer, const char * data, size_t len, void* reserved) 
-{
-	printf("SUBSCRIBED CHANNEL 1 %s, from node %s : len %d\n", group, peer, (int)len);
-}
 
 int main (int argc, char *argv [])
 {
 	shuppan_handle_t* handle = shuppan_init(info_callback, NULL);
 
-	shuppan_join(handle, GROUP_0, sub_callback_0);
-	shuppan_join(handle, GROUP_1, sub_callback_1);
+	shuppan_join(handle, GROUP_0);
+	shuppan_join(handle, GROUP_1);
 
 	zclock_sleep (500);
 
-	shuppan_publish(handle, GROUP_0, (const char *)MSG_0,strlen(MSG_0));
+	shuppan_shout(handle, GROUP_0, (const uint8_t*)MSG_0,strlen(MSG_0));
 	zclock_sleep (500);
-	shuppan_publish(handle, GROUP_1, (const char *)MSG_1,strlen(MSG_1));
+	shuppan_shout(handle, GROUP_1, (const uint8_t*)MSG_1,strlen(MSG_1));
+	zclock_sleep (500);
+	shuppan_publish(handle, "core");
 
-	zclock_sleep (10000);
+	zclock_sleep (100000);
 
 	shuppan_leave(handle, GROUP_0);
 	shuppan_leave(handle, GROUP_1);

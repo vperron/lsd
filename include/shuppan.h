@@ -20,6 +20,7 @@
  */
 
 #include <sys/types.h>
+#include <stdint.h>
 
 #ifndef _SHUPPAN_H_INCLUDED_
 #define _SHUPPAN_H_INCLUDED_
@@ -38,31 +39,47 @@
 extern "C" {
 #endif
 
+
+#define SHUPPAN_EVENT_ENTER   0
+#define SHUPPAN_EVENT_EXIT    1
+#define SHUPPAN_EVENT_WHISPER 2
+#define SHUPPAN_EVENT_SHOUT   3
+#define SHUPPAN_EVENT_DELIVER 4
+#define SHUPPAN_EVENT_JOIN    5
+#define SHUPPAN_EVENT_LEAVE   6
+
 typedef struct _shuppan_handle_t shuppan_handle_t;
 
-typedef void (shuppan_info_callback_fn) 
-	(shuppan_handle_t* handle, const char* event, 
-	 const char* peer, const char * arg0, size_t len, void* reserved);
-
-typedef void (shuppan_subscribe_callback_fn) 
-	(shuppan_handle_t* handle, const char* group, 
-	 const char* peer, const char * data, size_t len, void* reserved);
+typedef void (shuppan_callback_fn) 
+	(shuppan_handle_t* handle,                // Handle to the shuppan object, useful to speak from callback
+	 int event_code,                          // Event code as defined above 
+	 const char *peer,                        // Peer that originated the event, if applicable
+	 const char *group,                       // Group towards the event was directed, if applicable
+	 const uint8_t *arg0,                       // Variable-lemgth argument, if applicable
+	 size_t len,                              // Its length
+	 void* reserved);                         // Reserved for internal use, do not use
 
 
 // Init node, announce to network
-shuppan_handle_t* shuppan_init(shuppan_info_callback_fn* fn, void* reserved);
+shuppan_handle_t* shuppan_init(shuppan_callback_fn* fn, void* reserved);
 
 // Destroy node
 void shuppan_destroy(shuppan_handle_t* handle);
 
 // Join group 
-void shuppan_join(shuppan_handle_t* self, const char* group, shuppan_subscribe_callback_fn* callback);
+void shuppan_join(shuppan_handle_t* self, const char* group);
 
 // Leave group
 void shuppan_leave(shuppan_handle_t* self, const char* group);
 
-// Publish to listeners (members of a group)
-void shuppan_publish(shuppan_handle_t* self, const char* group, const char * msg, size_t len);
+// Whisper to node 
+void shuppan_whisper(shuppan_handle_t* self, const char* peer, const uint8_t* msg, size_t len);
+
+// Shout to listeners (members of a group)
+void shuppan_shout(shuppan_handle_t* self, const char* group, const uint8_t* msg, size_t len);
+
+// Publish a file to everyone
+void shuppan_publish(shuppan_handle_t* self, const char* filename);
 
 #ifdef __cplusplus
 }

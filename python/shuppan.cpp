@@ -23,7 +23,7 @@
 #include "shuppan.hpp"
 
 ShuppanApi::ShuppanApi() {
-	this->handle = shuppan_init(this->info_wrapper, this);
+	this->handle = shuppan_init(this->cb_wrapper, this);
 };
 
 ShuppanApi::~ShuppanApi() { 
@@ -31,33 +31,32 @@ ShuppanApi::~ShuppanApi() {
 };
 
 void ShuppanApi::join(std::string group) { 
-	shuppan_join(this->handle, group.c_str(), subscribe_wrapper);
+	shuppan_join(this->handle, group.c_str());
 };
 
-void ShuppanApi::publish(std::string group, const char * msg, size_t len) { 
-	shuppan_publish(this->handle, group.c_str(), msg, len);
+void ShuppanApi::whisper(std::string peer, const uint8_t *arg0, size_t len) { 
+	shuppan_shout(this->handle, peer.c_str(), arg0, len);
+};
+
+void ShuppanApi::shout(std::string group, const uint8_t *arg0, size_t len) { 
+	shuppan_shout(this->handle, group.c_str(), arg0, len);
+};
+
+void ShuppanApi::publish(std::string filename) { 
+	shuppan_publish(this->handle, filename.c_str());
 };
 
 void ShuppanApi::leave(std::string group) { 
 	shuppan_leave(this->handle, group.c_str());
 };
 
-void ShuppanApi::info_wrapper(shuppan_handle_t* handle, const char * event, 
-		const char * peer, const char * arg0, size_t len, void* class_ptr) {
+void ShuppanApi::cb_wrapper (	shuppan_handle_t* handle,	int code,
+				const char *peer,	const char *group, const uint8_t* arg0, 
+				size_t len,	void* class_ptr) {
 	if(class_ptr) {
 		ShuppanApi* shuppan = (ShuppanApi*) class_ptr;
-		std::string s_event(event);
-		std::string s_peer(peer);
-		shuppan->info_callback(s_event,s_peer,arg0,len);
-	}
-};
-
-void ShuppanApi::subscribe_wrapper(shuppan_handle_t* handle, const char * group, 
-		const char * peer, const char * data, size_t len, void* class_ptr) {
-	if(class_ptr) {
-		ShuppanApi* shuppan = (ShuppanApi*) class_ptr;
-		std::string s_group(group);
-		std::string s_peer(peer);
-		shuppan->subscribe_callback(s_group,s_peer,data,len);
+		std::string _peer(peer == NULL ? "" : peer);
+		std::string _group(group == NULL ? "" : group);
+		shuppan->callback(code, _peer, _group, (const char*)arg0, len);
 	}
 };

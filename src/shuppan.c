@@ -52,27 +52,21 @@ struct _shuppan_handle_t {
 	zctx_t* ctx;
 	zre_interface_t* interface;
 	void* pipe;
-	shuppan_info_callback_fn* info_callback;
+	shuppan_callback_fn* callback;
 	void* class_ptr;
-	zhash_t* callbacks;
 };
 
-typedef struct _fn_ptr_wrapper_t {
-	shuppan_subscribe_callback_fn* fn;
-} fn_ptr_wrapper_t;
-	
 
 static void interface_task (void *args, zctx_t *ctx, void *pipe);
 
 
 //  ---------------------------------------------------------------------
 //  Init
-shuppan_handle_t* shuppan_init(shuppan_info_callback_fn* fn, void* reserved) 
+shuppan_handle_t* shuppan_init(shuppan_callback_fn* fn, void* reserved) 
 {
 	shuppan_handle_t* self = (shuppan_handle_t *) zmalloc (sizeof (shuppan_handle_t));
-	self->info_callback = fn;
+	self->callback = fn;
 	self->ctx = zctx_new();
-	self->callbacks = zhash_new();
 	self->interface = zre_interface_new();
 	self->pipe = zthread_fork (self->ctx, interface_task, self);
 	self->class_ptr = reserved;
@@ -89,27 +83,16 @@ void shuppan_destroy(shuppan_handle_t* self)
 	zstr_send (self->pipe, "STOP");
 	zre_interface_destroy (&(self->interface));
 	zsocket_destroy (self->ctx, self->pipe);
-	zhash_destroy(&self->callbacks);
 	zctx_destroy (&self->ctx);
 	free(self);
 }
 
 //  ---------------------------------------------------------------------
 //  Join group 
-void shuppan_join(shuppan_handle_t* self, const char* group, shuppan_subscribe_callback_fn* fn) 
+void shuppan_join(shuppan_handle_t* self, const char* group) 
 {
-	fn_ptr_wrapper_t* wrapper;
-
 	assert(self);
 	assert(group);
-
-	if(fn) {
-		wrapper = (fn_ptr_wrapper_t*) zmalloc(sizeof(fn_ptr_wrapper_t));
-		wrapper->fn = fn;
-		zhash_insert(self->callbacks, group, wrapper);
-		zhash_freefn(self->callbacks, group, free);
-	}
-
   zre_interface_join(self->interface, group);
 }
 
@@ -119,13 +102,12 @@ void shuppan_leave(shuppan_handle_t* self, const char* group)
 {
 	assert(self);
 	assert(group);
-	zhash_delete(self->callbacks, group);
 	zre_interface_leave(self->interface, group);
 }
 
 //  ---------------------------------------------------------------------
-//  Publish to listeners (members of a group)
-void shuppan_publish(shuppan_handle_t* self, const char* group, const char * msg, size_t len) 
+//  Shout to listeners (members of a group)
+void shuppan_shout(shuppan_handle_t* self, const char* group, const uint8_t * msg, size_t len) 
 {
 	assert(self);
 	assert(group);
@@ -139,6 +121,51 @@ void shuppan_publish(shuppan_handle_t* self, const char* group, const char * msg
 	zmsg_destroy(&outgoing);
 }
 
+//  ---------------------------------------------------------------------
+//  Whisper to peer
+void shuppan_whisper(shuppan_handle_t* self, const char* peer, const uint8_t * msg, size_t len) 
+{
+	assert(self);
+	assert(peer);
+
+	zmsg_t* outgoing = zmsg_new();
+	zmsg_addstr (outgoing, peer);
+	if(msg && len) {
+		zmsg_addmem(outgoing, msg, len);
+	}
+	zre_interface_shout(self->interface, &outgoing);
+	zmsg_destroy(&outgoing);
+}
+
+
+//  ---------------------------------------------------------------------
+//  Publish file
+void shuppan_publish(shuppan_handle_t* self, const char* filename) 
+{
+	char* short_name;
+	char buffer[1024];
+	char full_name[1024];
+	char virtual_name[1024];
+
+	assert(self);
+	assert(filename);
+
+	memset(buffer,0,sizeof(buffer));
+	memset(virtual_name,0,sizeof(virtual_name));
+	memset(full_name,0,sizeof(full_name));
+
+	if(filename[0] != '/' && getcwd(buffer, sizeof(buffer)) != NULL) {
+		snprintf(full_name, sizeof(full_name), "%s/%s", buffer, filename);
+	} else {
+		strncpy(full_name, filename, sizeof(full_name));
+	}
+
+	short_name = basename(full_name);
+	snprintf(virtual_name, sizeof(virtual_name), "/%s", short_name);
+
+	debugLog("FILE = %s ABSOLUTE = %s VIRTUAL = %s", filename, full_name, virtual_name);
+	zre_interface_publish (self->interface, full_name, virtual_name);
+}
 
 static void interface_task (void *args, zctx_t *ctx, void *pipe )
 {
@@ -149,7 +176,6 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 	char *peer = NULL;
 	char *group = NULL;
 	zframe_t* msg_frame = NULL;
-	fn_ptr_wrapper_t* fn_wrapper = NULL;
 
 	zmq_pollitem_t pollitems [] = {
 		{ pipe,                             0, ZMQ_POLLIN, 0 },
@@ -176,53 +202,98 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 			}
 
 			char *event = zmsg_popstr (incoming);
+			debugLog("I EVENT == %s", event);
 			if (streq (event, "ENTER")) {
 				peer = zmsg_popstr (incoming);
 				debugLog ("I: ENTER '%s'", peer);
-				if(self->info_callback) {
-					(*self->info_callback)(self,event,peer,NULL,0, self->class_ptr);
+				if(self->callback) {
+					(*self->callback)(self,
+							SHUPPAN_EVENT_ENTER,
+							peer,
+							NULL,
+							NULL,
+							0, 
+							self->class_ptr);
 				}
 			} else if (streq (event, "EXIT")) {
 				peer = zmsg_popstr (incoming);
 				debugLog ("I: EXIT '%s'", peer);
-				if(self->info_callback) {
-					(*self->info_callback)(self,event,peer,NULL,0,self->class_ptr);
+				if(self->callback) {
+					(*self->callback)(self,
+							SHUPPAN_EVENT_EXIT,
+							peer,
+							NULL,
+							NULL,
+							0,
+							self->class_ptr);
 				}
 			} else if (streq (event, "WHISPER")) {
 				peer = zmsg_popstr (incoming);
 				msg_frame = zmsg_pop (incoming);
 				debugLog ("I: WHISPER '%s' msglen %d", peer, (int)zframe_size(msg_frame));
-				if(self->info_callback) {
-					(*self->info_callback)(self,event,peer,(const char*)zframe_data(msg_frame),zframe_size(msg_frame),self->class_ptr);
+				if(self->callback) {
+					(*self->callback)(self,
+							SHUPPAN_EVENT_WHISPER,
+							peer,
+							NULL,
+							(const uint8_t*)zframe_data(msg_frame),
+							zframe_size(msg_frame),
+							self->class_ptr);
 				}
 			} else 	if (streq (event, "SHOUT")) {
 				peer = zmsg_popstr (incoming);
 				group = zmsg_popstr (incoming);
 				msg_frame = zmsg_pop (incoming); 
 				debugLog ("I: SHOUT from '%s' group '%s' msglen %d", peer, group, (int)zframe_size(msg_frame));
-				if(self->info_callback) {
-					(*self->info_callback)(self,event,peer,group,zframe_size(msg_frame),self->class_ptr);
+				if(self->callback) {
+					(*self->callback)(self,
+							SHUPPAN_EVENT_SHOUT,
+							peer,
+							group,
+							zframe_data(msg_frame),
+							zframe_size(msg_frame),
+							self->class_ptr);
 				}
-				fn_wrapper =  (fn_ptr_wrapper_t* ) zhash_lookup(self->callbacks, group);
-				if(fn_wrapper) {
-					shuppan_subscribe_callback_fn* fn = fn_wrapper->fn;
-					if(fn) {
-						(*fn)(self,group,peer,(const char*)zframe_data(msg_frame), zframe_size(msg_frame),self->class_ptr);
-					}
+			} else if (streq (event, "DELIVER")) {
+				char *filename = zmsg_popstr (incoming);
+				char *fullname = zmsg_popstr (incoming);
+				debugLog ("I: DELIVER file %s", fullname);
+				if(self->callback) {
+					(*self->callback)(self,
+							SHUPPAN_EVENT_DELIVER,
+							NULL,
+							NULL,
+							(const uint8_t*)fullname,
+							strlen(fullname),
+							self->class_ptr);
 				}
-			} else if (streq (event, "JOIN")) {
+				free (fullname);
+				free (filename);
+			}else if (streq (event, "JOIN")) {
 				peer = zmsg_popstr (incoming);
 				group = zmsg_popstr (incoming);
 				debugLog ("I: JOIN '%s - %s'", peer, group);
-				if(self->info_callback) {
-					(*self->info_callback)(self,event,peer,group,strlen(group),self->class_ptr);
+				if(self->callback) {
+					(*self->callback)(self,
+							SHUPPAN_EVENT_JOIN,
+							peer,
+							group,
+							NULL,
+							0,
+							self->class_ptr);
 				}
 			} else if (streq (event, "LEAVE")) {
 				peer = zmsg_popstr (incoming);
 				group = zmsg_popstr (incoming);
 				debugLog ("I: LEAVE '%s - %s'", peer, group);
-				if(self->info_callback) {
-					(*self->info_callback)(self,event,peer,group,strlen(group),self->class_ptr);
+				if(self->callback) {
+					(*self->callback)(self,
+							SHUPPAN_EVENT_LEAVE,
+							peer,
+							group,
+							NULL,
+							0,
+							self->class_ptr);
 				}
 			}
 

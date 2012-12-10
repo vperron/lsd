@@ -26,26 +26,32 @@ typedef struct _shuppan_handle_t shuppan_handle_t;
 class ShuppanApi {
 
   public:
-    virtual void info_callback(std::string event, std::string peer, 
-        const char* data, size_t len) const {} ;
-    virtual void subscribe_callback(std::string group, std::string peer, 
-				const char* data, size_t len) const {} ;
+    virtual void callback(
+				int code,
+				std::string peer,
+				std::string group, 
+        const char* arg0, 
+				size_t len) const {} ;
 
 		ShuppanApi();
 		virtual ~ShuppanApi();
 
     virtual void join(std::string group);
-    virtual void publish(std::string group, const char* data, size_t len);
+    virtual void whisper(std::string group, const uint8_t* arg0, size_t len);
+    virtual void shout(std::string peer, const uint8_t* arg0, size_t len);
+    virtual void publish(std::string filename);
     virtual void leave(std::string group);
 
   private:
     shuppan_handle_t* handle;
 
-    static void info_wrapper(shuppan_handle_t* handle,
-				const char * event, const char * peer, 
-        const char* arg0, size_t len,void* class_ptr);
-    static void subscribe_wrapper(shuppan_handle_t* handle, 
-				const char * group, const char * peer, 
-				const char* data, size_t len,void* class_ptr);
+    static void cb_wrapper(
+				shuppan_handle_t* handle,
+				int code,
+				const char *peer,
+				const char *group, 
+        const uint8_t* arg0, 
+				size_t len,
+				void* class_ptr);
 
 };
