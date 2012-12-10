@@ -2,14 +2,14 @@
 
 from time import sleep
 
-from shuppan import *
+from lsd import *
 
-class ShuppanOver(ShuppanApi):
+class LsdOver(LsdApi):
 
     def callback(self, *args):
         print "Info : "+str(args)
 
-s = ShuppanOver()
+s = LsdOver()
 
 s.join("TEST")
 sleep(0.5)

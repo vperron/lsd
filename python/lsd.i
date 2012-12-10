@@ -1,8 +1,8 @@
-/* File : shuppan.i */
-%module(directors="1") shuppan
+/* File : lsd.i */
+%module(directors="1") lsd
 
 %{
-#include "shuppan.hpp"
+#include "lsd.hpp"
 %}
 
 
@@ -32,7 +32,7 @@
 }
 
 
-%feature("director") ShuppanApi;
+%feature("director") LsdApi;
 
-%include "shuppan.hpp"
+%include "lsd.hpp"
 

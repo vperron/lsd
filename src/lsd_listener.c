@@ -1,7 +1,7 @@
 /**
  * =====================================================================================
  *
- *   @file shuppan_tester.c
+ *   @file lsd_tester.c
  *   @author Victor Perron (), victor@iso3103.net
  *   
  *        Version:  1.0
@@ -10,7 +10,7 @@
  *
  *   @section DESCRIPTION
  *
- *       Shuppan routines tester tool
+ *       Lsd routines tester tool
  *       
  *   @section LICENSE
  *
@@ -19,7 +19,7 @@
  * =====================================================================================
  */
 
-#include "shuppan.h"
+#include "lsd.h"
 #include "zre/zre.h"
 
 #define GROUP_0 "GROUP0"
@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-static void info_callback (shuppan_handle_t* handle,
+static void info_callback (lsd_handle_t* handle,
 			int event,
 			const char *node,
 			const char *group, 
@@ -42,16 +42,16 @@ static void info_callback (shuppan_handle_t* handle,
 
 int main (int argc, char *argv [])
 {
-	shuppan_handle_t* handle = shuppan_init(info_callback, NULL);
+	lsd_handle_t* handle = lsd_init(info_callback, NULL);
 
-	shuppan_join(handle, GROUP_0);
-	shuppan_join(handle, GROUP_1);
+	lsd_join(handle, GROUP_0);
+	lsd_join(handle, GROUP_1);
 
 	zclock_sleep (100000);
 
-	shuppan_leave(handle, GROUP_0);
-	shuppan_leave(handle, GROUP_1);
-	shuppan_destroy(handle);
+	lsd_leave(handle, GROUP_0);
+	lsd_leave(handle, GROUP_1);
+	lsd_destroy(handle);
 	return 0;
 }
 

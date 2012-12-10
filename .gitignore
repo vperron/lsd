@@ -11,7 +11,7 @@ libtool
 src/.deps/
 src/Makefile
 src/Makefile.in
-src/libshuppan.pc
+src/liblsd.pc
 src/platform.h
 src/platform.h.in
 src/platform.h.in~
@@ -22,11 +22,11 @@ src/stamp-h1
 *.la
 *.lst
 core
-shuppan_tester
-shuppan_sender
-shuppan_listener
+lsd_tester
+lsd_sender
+lsd_listener
 tags
 python/.deps/
-python/shuppan.py
-python/shuppan_wrap_python.cpp
-python/shuppan_wrap_python.h
+python/lsd.py
+python/lsd_wrap_python.cpp
+python/lsd_wrap_python.h

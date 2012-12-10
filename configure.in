@@ -6,7 +6,7 @@ AC_PREREQ(2.61)
 # The version in git should reflect the *next* version planned.
 # Version must be MAJOR.MINOR.PATCH otherwise things will break.
 #
-AC_INIT([libshuppan],[0.0.1],[victor@iso3103.net])
+AC_INIT([liblsd],[0.0.1],[victor@iso3103.net])
 
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR(config)
@@ -18,11 +18,11 @@ PV_MAJOR=`echo $PACKAGE_VERSION | cut -d . -f 1`
 PV_MINOR=`echo $PACKAGE_VERSION | cut -d . -f 2`
 PV_PATCH=`echo $PACKAGE_VERSION | cut -d . -f 3`
 AC_DEFINE_UNQUOTED([PACKAGE_VERSION_MAJOR],[$PV_MAJOR],
-    [LIBSHUPPAN major version])
+    [LIBLSD major version])
 AC_DEFINE_UNQUOTED([PACKAGE_VERSION_MINOR],[$PV_MINOR],
-    [LIBSHUPPAN minor version])
+    [LIBLSD minor version])
 AC_DEFINE_UNQUOTED([PACKAGE_VERSION_PATCH],[$PV_PATCH],
-    [LIBSHUPPAN patchlevel])
+    [LIBLSD patchlevel])
 # This lets us use PACKAGE_VERSION in Makefiles
 AC_SUBST(PACKAGE_VERSION)
 
@@ -33,7 +33,7 @@ AC_SUBST(PACKAGE_VERSION)
 # know exactly what you're doing and have read and understand
 # http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
 #
-# libshuppan -version-info
+# liblsd -version-info
 LTVER="0:2:0"
 AC_SUBST(LTVER)
 
@@ -73,9 +73,9 @@ AC_ARG_ENABLE([python],
 AC_ARG_WITH([libuuid],
             [AS_HELP_STRING([--with-libuuid],
 						[Specify libuuid prefix])],
-            [shuppan_search_libuuid="yes"],
+            [lsd_search_libuuid="yes"],
             [])
-if test "x$shuppan_search_libuuid" = "xyes"; then
+if test "x$lsd_search_libuuid" = "xyes"; then
     if test -r "${with_libuuid}/include/uuid/uuid.h"; then
         CFLAGS="-I${with_libuuid}/include ${CFLAGS}"
         LDFLAGS="-L${with_libuuid}/lib ${LDFLAGS}"
@@ -88,9 +88,9 @@ fi
 AC_ARG_WITH([libzmq],
             [AS_HELP_STRING([--with-libzmq],
 						[Specify libzmq prefix])],
-            [shuppan_search_libzmq="yes"],
+            [lsd_search_libzmq="yes"],
             [])
-if test "x$shuppan_search_libzmq" = "xyes"; then
+if test "x$lsd_search_libzmq" = "xyes"; then
     if test -r "${with_libzmq}/include/zmq.h"; then
         CFLAGS="-I${with_libzmq}/include ${CFLAGS}"
         LDFLAGS="-L${with_libzmq}/lib ${LDFLAGS}"
@@ -103,9 +103,9 @@ fi
 AC_ARG_WITH([libczmq],
             [AS_HELP_STRING([--with-libczmq],
                             [Specify libczmq prefix])],
-            [shuppan_search_libczmq="yes"],
+            [lsd_search_libczmq="yes"],
             [])
-if test "x$shuppan_search_libczmq" = "xyes"; then
+if test "x$lsd_search_libczmq" = "xyes"; then
     if test -r "${with_libczmq}/include/czmq.h"; then
         CFLAGS="-I${with_libczmq}/include ${CFLAGS}"
         LDFLAGS="-L${with_libczmq}/lib ${LDFLAGS}"
@@ -118,9 +118,9 @@ fi
 AC_ARG_WITH([libcrypto],
             [AS_HELP_STRING([--with-libcrypto],
                             [Specify libcrypto prefix])],
-            [shuppan_search_libcrypto="yes"],
+            [lsd_search_libcrypto="yes"],
             [])
-if test "x$shuppan_search_libcrypto" = "xyes"; then
+if test "x$lsd_search_libcrypto" = "xyes"; then
     if test -r "${with_libcrypto}/include/openssl/crypto.h"; then
         CFLAGS="-I${with_libcrypto}/include ${CFLAGS}"
         LDFLAGS="-L${with_libcrypto}/lib ${LDFLAGS}"
@@ -133,9 +133,9 @@ fi
 AC_ARG_WITH([libfmq],
             [AS_HELP_STRING([--with-libfmq],
                             [Specify libfmq prefix])],
-            [shuppan_search_libfmq="yes"],
+            [lsd_search_libfmq="yes"],
             [])
-if test "x$shuppan_search_libfmq" = "xyes"; then
+if test "x$lsd_search_libfmq" = "xyes"; then
     if test -r "${with_libfmq}/include/fmq.h"; then
         CFLAGS="-I${with_libfmq}/include ${CFLAGS}"
         LDFLAGS="-L${with_libfmq}/lib ${LDFLAGS}"
@@ -148,9 +148,9 @@ fi
 AC_ARG_WITH([libzre],
             [AS_HELP_STRING([--with-libzre],
                             [Specify libzre prefix])],
-            [shuppan_search_libzre="yes"],
+            [lsd_search_libzre="yes"],
             [])
-if test "x$shuppan_search_libzre" = "xyes"; then
+if test "x$lsd_search_libzre" = "xyes"; then
     if test -r "${with_libzre}/include/zre/zre.h"; then
         CFLAGS="-I${with_libzre}/include ${CFLAGS}"
         LDFLAGS="-L${with_libzre}/lib ${LDFLAGS}"
@@ -174,12 +174,12 @@ case "${host_os}" in
     *linux*)
         # Define on Linux to enable all library features
         CFLAGS="-D_GNU_SOURCE -DLINUX $CFLAGS"
-        AC_DEFINE(LIBSHUPPAN_HAVE_LINUX, 1, [Have Linux OS])
+        AC_DEFINE(LIBLSD_HAVE_LINUX, 1, [Have Linux OS])
 
 				case "${host_os}" in
 					*android*)
-						AC_DEFINE(LIBSHUPPAN_HAVE_ANDROID, 1, [Have Android OS])
-						libshuppan_host_android="yes"
+						AC_DEFINE(LIBLSD_HAVE_ANDROID, 1, [Have Android OS])
+						liblsd_host_android="yes"
 						enable_python="no"
 					;;
 				esac
@@ -188,57 +188,57 @@ case "${host_os}" in
     *solaris*)
         # Define on Solaris to enable all library features
         CFLAGS="-D_PTHREADS $CFLAGS"
-        AC_DEFINE(LIBSHUPPAN_HAVE_SOLARIS, 1, [Have Solaris OS])
+        AC_DEFINE(LIBLSD_HAVE_SOLARIS, 1, [Have Solaris OS])
         ;;
     *freebsd*)
         # Define on FreeBSD to enable all library features
         CFLAGS="-D__BSD_VISIBLE $CFLAGS"
-        AC_DEFINE(LIBSHUPPAN_HAVE_FREEBSD, 1, [Have FreeBSD OS])
+        AC_DEFINE(LIBLSD_HAVE_FREEBSD, 1, [Have FreeBSD OS])
         ;;
     *darwin*)
         # Define on Darwin to enable all library features
         CFLAGS="-D_DARWIN_C_SOURCE $CFLAGS"
-        AC_DEFINE(LIBSHUPPAN_HAVE_OSX, 1, [Have DarwinOSX OS])
+        AC_DEFINE(LIBLSD_HAVE_OSX, 1, [Have DarwinOSX OS])
         ;;
     *netbsd*)
         # Define on NetBSD to enable all library features
         CFLAGS="-D_NETBSD_SOURCE $CFLAGS"
-        AC_DEFINE(LIBSHUPPAN_HAVE_NETBSD, 1, [Have NetBSD OS])
+        AC_DEFINE(LIBLSD_HAVE_NETBSD, 1, [Have NetBSD OS])
         ;;
     *openbsd*)
         # Define on OpenBSD to enable all library features
         CFLAGS="-D_BSD_SOURCE $CFLAGS"
-        AC_DEFINE(LIBSHUPPAN_HAVE_OPENBSD, 1, [Have OpenBSD OS])
+        AC_DEFINE(LIBLSD_HAVE_OPENBSD, 1, [Have OpenBSD OS])
         ;;
     *nto-qnx*)
-        AC_DEFINE(LIBSHUPPAN_HAVE_QNXNTO, 1, [Have QNX Neutrino OS])
+        AC_DEFINE(LIBLSD_HAVE_QNXNTO, 1, [Have QNX Neutrino OS])
         ;;
     *aix*)
-        AC_DEFINE(LIBSHUPPAN_HAVE_AIX, 1, [Have AIX OS])
+        AC_DEFINE(LIBLSD_HAVE_AIX, 1, [Have AIX OS])
         ;;
     *hpux*)
         # Define on HP-UX to enable all library features
         CFLAGS="-D_POSIX_C_SOURCE=200112L"
-        AC_DEFINE(LIBSHUPPAN_HAVE_HPUX, 1, [Have HPUX OS])
+        AC_DEFINE(LIBLSD_HAVE_HPUX, 1, [Have HPUX OS])
         ;;
     *mingw32*)
-        AC_DEFINE(LIBSHUPPAN_HAVE_WINDOWS, 1, [Have Windows OS])
-        AC_DEFINE(LIBSHUPPAN_HAVE_MINGW32, 1, [Have MinGW32])
+        AC_DEFINE(LIBLSD_HAVE_WINDOWS, 1, [Have Windows OS])
+        AC_DEFINE(LIBLSD_HAVE_MINGW32, 1, [Have MinGW32])
         AC_CHECK_HEADERS(windows.h)
-        shuppan_on_mingw32="yes"
-        shuppan_install_man="no"
+        lsd_on_mingw32="yes"
+        lsd_install_man="no"
         ;;
     *cygwin*)
         # Define on Cygwin to enable all library features
         CFLAGS="-D_GNU_SOURCE $CFLAGS"
-        AC_DEFINE(LIBSHUPPAN_HAVE_CYGWIN, 1, [Have Cygwin])
+        AC_DEFINE(LIBLSD_HAVE_CYGWIN, 1, [Have Cygwin])
         ;;
     *)
         AC_MSG_ERROR([unsupported system: ${host_os}.])
         ;;
 esac
 
-AM_CONDITIONAL(HOST_ANDROID, test "x$libshuppan_host_android" = "xyes")
+AM_CONDITIONAL(HOST_ANDROID, test "x$liblsd_host_android" = "xyes")
 
 AM_CONDITIONAL(ENABLE_PYTHON, test "x$enable_python" = "xyes")
 if test "x$enable_python" = "xyes"; then
@@ -325,4 +325,4 @@ AC_SUBST(LDFLAGS)
 # Checks for library functions.
 AC_TYPE_SIGNAL
 
-AC_OUTPUT(Makefile src/Makefile src/libshuppan.pc python/Makefile)
+AC_OUTPUT(Makefile src/Makefile src/liblsd.pc python/Makefile)

@@ -1,7 +1,7 @@
 /**
  * =====================================================================================
  *
- *   @file shuppan.c
+ *   @file lsd.c
  *   @author Victor Perron (), victor@iso3103.net
  *   
  *        Version:  1.0
@@ -10,7 +10,7 @@
  *
  *   @section DESCRIPTION
  *
- *       Shuppan main library implementation
+ *       Lsd main library implementation
  *       
  *   @section LICENSE
  *
@@ -19,14 +19,14 @@
  * =====================================================================================
  */
 
-#include "shuppan.h"
+#include "lsd.h"
 
 #include "zre/zre.h"
 
 #ifdef DEBUG
-#ifdef LIBSHUPPAN_HAVE_ANDROID
+#ifdef LIBLSD_HAVE_ANDROID
 #include <android/log.h>
-#define APPNAME "libshuppan"
+#define APPNAME "liblsd"
 #define debugLog(fmt, ...) \
 	do { \
 		__android_log_print(ANDROID_LOG_DEBUG, APPNAME, \
@@ -48,11 +48,11 @@
 extern "C" {
 #endif
 
-struct _shuppan_handle_t {
+struct _lsd_handle_t {
 	zctx_t* ctx;
 	zre_interface_t* interface;
 	void* pipe;
-	shuppan_callback_fn* callback;
+	lsd_callback_fn* callback;
 	void* class_ptr;
 };
 
@@ -62,9 +62,9 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe);
 
 //  ---------------------------------------------------------------------
 //  Init
-shuppan_handle_t* shuppan_init(shuppan_callback_fn* fn, void* reserved) 
+lsd_handle_t* lsd_init(lsd_callback_fn* fn, void* reserved) 
 {
-	shuppan_handle_t* self = (shuppan_handle_t *) zmalloc (sizeof (shuppan_handle_t));
+	lsd_handle_t* self = (lsd_handle_t *) zmalloc (sizeof (lsd_handle_t));
 	self->callback = fn;
 	self->ctx = zctx_new();
 	self->interface = zre_interface_new();
@@ -76,7 +76,7 @@ shuppan_handle_t* shuppan_init(shuppan_callback_fn* fn, void* reserved)
 
 //  ---------------------------------------------------------------------
 //  Destroy node
-void shuppan_destroy(shuppan_handle_t* self) 
+void lsd_destroy(lsd_handle_t* self) 
 {
 	assert(self);
 
@@ -89,7 +89,7 @@ void shuppan_destroy(shuppan_handle_t* self)
 
 //  ---------------------------------------------------------------------
 //  Join group 
-void shuppan_join(shuppan_handle_t* self, const char* group) 
+void lsd_join(lsd_handle_t* self, const char* group) 
 {
 	assert(self);
 	assert(group);
@@ -98,7 +98,7 @@ void shuppan_join(shuppan_handle_t* self, const char* group)
 
 //  ---------------------------------------------------------------------
 //  Leave group
-void shuppan_leave(shuppan_handle_t* self, const char* group)
+void lsd_leave(lsd_handle_t* self, const char* group)
 {
 	assert(self);
 	assert(group);
@@ -107,7 +107,7 @@ void shuppan_leave(shuppan_handle_t* self, const char* group)
 
 //  ---------------------------------------------------------------------
 //  Shout to listeners (members of a group)
-void shuppan_shout(shuppan_handle_t* self, const char* group, const uint8_t * msg, size_t len) 
+void lsd_shout(lsd_handle_t* self, const char* group, const uint8_t * msg, size_t len) 
 {
 	assert(self);
 	assert(group);
@@ -123,7 +123,7 @@ void shuppan_shout(shuppan_handle_t* self, const char* group, const uint8_t * ms
 
 //  ---------------------------------------------------------------------
 //  Whisper to peer
-void shuppan_whisper(shuppan_handle_t* self, const char* peer, const uint8_t * msg, size_t len) 
+void lsd_whisper(lsd_handle_t* self, const char* peer, const uint8_t * msg, size_t len) 
 {
 	assert(self);
 	assert(peer);
@@ -140,7 +140,7 @@ void shuppan_whisper(shuppan_handle_t* self, const char* peer, const uint8_t * m
 
 //  ---------------------------------------------------------------------
 //  Publish file
-void shuppan_publish(shuppan_handle_t* self, const char* filename) 
+void lsd_publish(lsd_handle_t* self, const char* filename) 
 {
 	char* short_name;
 	char buffer[1024];
@@ -169,7 +169,7 @@ void shuppan_publish(shuppan_handle_t* self, const char* filename)
 
 static void interface_task (void *args, zctx_t *ctx, void *pipe )
 {
-	shuppan_handle_t *self = (shuppan_handle_t*) args;
+	lsd_handle_t *self = (lsd_handle_t*) args;
 
 	assert(self);
 
@@ -208,7 +208,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 				debugLog ("I: ENTER '%s'", peer);
 				if(self->callback) {
 					(*self->callback)(self,
-							SHUPPAN_EVENT_ENTER,
+							LSD_EVENT_ENTER,
 							peer,
 							NULL,
 							NULL,
@@ -220,7 +220,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 				debugLog ("I: EXIT '%s'", peer);
 				if(self->callback) {
 					(*self->callback)(self,
-							SHUPPAN_EVENT_EXIT,
+							LSD_EVENT_EXIT,
 							peer,
 							NULL,
 							NULL,
@@ -233,7 +233,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 				debugLog ("I: WHISPER '%s' msglen %d", peer, (int)zframe_size(msg_frame));
 				if(self->callback) {
 					(*self->callback)(self,
-							SHUPPAN_EVENT_WHISPER,
+							LSD_EVENT_WHISPER,
 							peer,
 							NULL,
 							(const uint8_t*)zframe_data(msg_frame),
@@ -247,7 +247,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 				debugLog ("I: SHOUT from '%s' group '%s' msglen %d", peer, group, (int)zframe_size(msg_frame));
 				if(self->callback) {
 					(*self->callback)(self,
-							SHUPPAN_EVENT_SHOUT,
+							LSD_EVENT_SHOUT,
 							peer,
 							group,
 							zframe_data(msg_frame),
@@ -260,7 +260,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 				debugLog ("I: DELIVER file %s", fullname);
 				if(self->callback) {
 					(*self->callback)(self,
-							SHUPPAN_EVENT_DELIVER,
+							LSD_EVENT_DELIVER,
 							NULL,
 							NULL,
 							(const uint8_t*)fullname,
@@ -275,7 +275,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 				debugLog ("I: JOIN '%s - %s'", peer, group);
 				if(self->callback) {
 					(*self->callback)(self,
-							SHUPPAN_EVENT_JOIN,
+							LSD_EVENT_JOIN,
 							peer,
 							group,
 							NULL,
@@ -288,7 +288,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 				debugLog ("I: LEAVE '%s - %s'", peer, group);
 				if(self->callback) {
 					(*self->callback)(self,
-							SHUPPAN_EVENT_LEAVE,
+							LSD_EVENT_LEAVE,
 							peer,
 							group,
 							NULL,

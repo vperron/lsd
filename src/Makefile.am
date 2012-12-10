@@ -1,32 +1,32 @@
-lib_LTLIBRARIES = libshuppan.la
+lib_LTLIBRARIES = liblsd.la
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libshuppan.pc
+pkgconfig_DATA = liblsd.pc
 
 include_HEADERS = \
-    ../include/shuppan.h
+    ../include/lsd.h
 
-libshuppan_la_SOURCES = \
-    shuppan.c
+liblsd_la_SOURCES = \
+    lsd.c
 
 if DISABLE_VERSION
-libshuppan_la_LDFLAGS = -avoid-version
+liblsd_la_LDFLAGS = -avoid-version
 else
-libshuppan_la_LDFLAGS = -version-info @LTVER@
+liblsd_la_LDFLAGS = -version-info @LTVER@
 endif
 
 if HOST_ANDROID
-libshuppan_la_LDFLAGS += -llog
+liblsd_la_LDFLAGS += -llog
 endif
 
 INCLUDES = -I$(top_srcdir)/include
 
-LDADD = $(top_builddir)/src/libshuppan.la
+LDADD = $(top_builddir)/src/liblsd.la
 
-noinst_PROGRAMS = shuppan_tester shuppan_listener shuppan_sender
+noinst_PROGRAMS = lsd_tester lsd_listener lsd_sender
 
-shuppan_listener_SOURCES = shuppan_listener.c
-shuppan_sender_SOURCES = shuppan_sender.c
-shuppan_tester_SOURCES = shuppan_tester.c
+lsd_listener_SOURCES = lsd_listener.c
+lsd_sender_SOURCES = lsd_sender.c
+lsd_tester_SOURCES = lsd_tester.c
 
-TESTS = shuppan_selftest
+TESTS = lsd_selftest

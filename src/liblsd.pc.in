@@ -3,9 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libshuppan
+Name: liblsd
 Description: Abstraction later for Zyre ZRE protocol
 Version: @VERSION@
 Requires: libzre
-Libs: -L${libdir} -lshuppan
+Libs: -L${libdir} -llsd
 Cflags: -I${includedir}

@@ -1,7 +1,7 @@
 /**
  * =====================================================================================
  *
- *   @file shuppan_tester.c
+ *   @file lsd_tester.c
  *   @author Victor Perron (), victor@iso3103.net
  *   
  *        Version:  1.0
@@ -10,7 +10,7 @@
  *
  *   @section DESCRIPTION
  *
- *       Shuppan routines tester tool
+ *       Lsd routines tester tool
  *       
  *   @section LICENSE
  *
@@ -20,7 +20,7 @@
  */
 
 
-#include "shuppan.h"
+#include "lsd.h"
 #include "zre/zre.h"
 
 
@@ -28,7 +28,7 @@
 extern "C" {
 #endif
 
-	static void info_callback (shuppan_handle_t* handle,
+	static void info_callback (lsd_handle_t* handle,
 			int event,
 			const char *node,
 			const char *group, 
@@ -41,7 +41,7 @@ extern "C" {
 
 int main (int argc, char *argv [])
 {
-	shuppan_handle_t** handles;
+	lsd_handle_t** handles;
 
 	//  Get number of interfaces to simulate, default 100
 	int max_handles = 100;
@@ -51,7 +51,7 @@ int main (int argc, char *argv [])
 	if (argc > 2)
 		max_loops = atoi (argv [2]);
 
-	handles = (shuppan_handle_t**) zmalloc(max_handles*sizeof(shuppan_handle_t*));
+	handles = (lsd_handle_t**) zmalloc(max_handles*sizeof(lsd_handle_t*));
 
 	while(max_loops > 0) {
 
@@ -59,7 +59,7 @@ int main (int argc, char *argv [])
 
 		if(handles[index]) {
 
-			shuppan_handle_t* handle = handles[index];
+			lsd_handle_t* handle = handles[index];
 			uint r = randof(4);
 			uint group_num = randof(10);
 			char group[50], msg[50];
@@ -67,18 +67,18 @@ int main (int argc, char *argv [])
 			sprintf(msg, "Hello group #%02d !", (int)group_num);
 
 			if(r == 0) {
-				shuppan_shout(handle, group, (const uint8_t*)msg, strlen(msg));
+				lsd_shout(handle, group, (const uint8_t*)msg, strlen(msg));
 			} else if(r == 1) {
-				shuppan_join(handle, group);
+				lsd_join(handle, group);
 			} else if(r == 2) {
-				shuppan_leave(handle, group);
+				lsd_leave(handle, group);
 			} else {
-				shuppan_destroy(handle);
+				lsd_destroy(handle);
 				handles[index] = NULL;
 			}
 
 		} else {
-			handles[index] = shuppan_init(info_callback, NULL);
+			handles[index] = lsd_init(info_callback, NULL);
 		}
 
 		zclock_sleep (500);
@@ -88,7 +88,7 @@ int main (int argc, char *argv [])
 
 	for(int i=0;i<max_handles; i++) {
 		if(handles[i]) {
-			shuppan_destroy(handles[i]);
+			lsd_destroy(handles[i]);
 		}
 	}
 

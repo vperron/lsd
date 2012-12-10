@@ -1,7 +1,7 @@
 /**
  * =====================================================================================
  *
- *   @file shuppan_api.hpp
+ *   @file lsd_api.hpp
  *   @author Victor Perron (), victor@iso3103.net
  *   
  *        Version:  1.0
@@ -21,9 +21,9 @@
 
 #include <string>
 
-typedef struct _shuppan_handle_t shuppan_handle_t;
+typedef struct _lsd_handle_t lsd_handle_t;
 
-class ShuppanApi {
+class LsdApi {
 
   public:
     virtual void callback(
@@ -33,8 +33,8 @@ class ShuppanApi {
         const char* arg0, 
 				size_t len) const {} ;
 
-		ShuppanApi();
-		virtual ~ShuppanApi();
+		LsdApi();
+		virtual ~LsdApi();
 
     virtual void join(std::string group);
     virtual void whisper(std::string group, const uint8_t* arg0, size_t len);
@@ -43,10 +43,10 @@ class ShuppanApi {
     virtual void leave(std::string group);
 
   private:
-    shuppan_handle_t* handle;
+    lsd_handle_t* handle;
 
     static void cb_wrapper(
-				shuppan_handle_t* handle,
+				lsd_handle_t* handle,
 				int code,
 				const char *peer,
 				const char *group, 
