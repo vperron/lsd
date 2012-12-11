@@ -20,7 +20,7 @@
  */
 
 #include "lsd.h"
-#include "zre/zre.h"
+#include "zre.h"
 
 #define GROUP_0 "GROUP0"
 #define GROUP_1 "GROUP1"

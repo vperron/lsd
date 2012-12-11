@@ -21,7 +21,7 @@
 
 
 #include "lsd.h"
-#include "zre/zre.h"
+#include "zre.h"
 
 
 #ifdef __cplusplus

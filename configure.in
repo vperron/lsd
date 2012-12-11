@@ -151,11 +151,11 @@ AC_ARG_WITH([libzre],
             [lsd_search_libzre="yes"],
             [])
 if test "x$lsd_search_libzre" = "xyes"; then
-    if test -r "${with_libzre}/include/zre/zre.h"; then
+    if test -r "${with_libzre}/include/zre.h"; then
         CFLAGS="-I${with_libzre}/include ${CFLAGS}"
         LDFLAGS="-L${with_libzre}/lib ${LDFLAGS}"
     else
-        AC_MSG_ERROR([${with_libzre}/include/zre/zre.h not found. Please check libzre prefix])
+        AC_MSG_ERROR([${with_libzre}/include/zre.h not found. Please check libzre prefix])
     fi
 fi
 

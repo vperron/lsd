@@ -19,9 +19,10 @@
  * =====================================================================================
  */
 
+#include "czmq.h"
 #include "lsd.h"
 
-#include "zre/zre.h"
+#include "zre.h"
 
 #ifdef DEBUG
 #ifdef LIBLSD_HAVE_ANDROID
