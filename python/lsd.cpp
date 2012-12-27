@@ -23,7 +23,7 @@
 #include "lsd.hpp"
 
 LsdApi::LsdApi() {
-	this->handle = lsd_init(this->cb_wrapper, this);
+	this->handle = lsd_init(NULL,this->cb_wrapper, this);
 };
 
 LsdApi::~LsdApi() { 

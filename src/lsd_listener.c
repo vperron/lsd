@@ -42,7 +42,7 @@ static void info_callback (lsd_handle_t* handle,
 
 int main (int argc, char *argv [])
 {
-	lsd_handle_t* handle = lsd_init(info_callback, NULL);
+	lsd_handle_t* handle = lsd_init(NULL, info_callback, NULL);
 
 	lsd_join(handle, GROUP_0);
 	lsd_join(handle, GROUP_1);

@@ -78,7 +78,7 @@ int main (int argc, char *argv [])
 			}
 
 		} else {
-			handles[index] = lsd_init(info_callback, NULL);
+			handles[index] = lsd_init(NULL, info_callback, NULL);
 		}
 
 		zclock_sleep (500);

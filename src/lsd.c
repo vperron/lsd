@@ -51,6 +51,7 @@ extern "C" {
 
 struct _lsd_handle_t {
 	zctx_t* ctx;
+	bool owns_ctx;
 	zre_interface_t* interface;
 	void* pipe;
 	lsd_callback_fn* callback;
@@ -63,11 +64,20 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe);
 
 //  ---------------------------------------------------------------------
 //  Init
-lsd_handle_t* lsd_init(lsd_callback_fn* fn, void* reserved) 
+lsd_handle_t* lsd_init(void* ctx, lsd_callback_fn* fn, void* reserved) 
 {
 	lsd_handle_t* self = (lsd_handle_t *) zmalloc (sizeof (lsd_handle_t));
 	self->callback = fn;
-	self->ctx = zctx_new();
+	if(!ctx) { 
+		self->ctx = zctx_new();
+		zre_global_ctx = self->ctx;
+		self->owns_ctx = true;
+	} else { 
+		self->ctx = ctx;
+		zre_global_ctx = ctx;
+		self->owns_ctx = false;
+	}
+	
 	self->interface = zre_interface_new();
 	self->pipe = zthread_fork (self->ctx, interface_task, self);
 	self->class_ptr = reserved;
@@ -84,7 +94,8 @@ void lsd_destroy(lsd_handle_t* self)
 	zstr_send (self->pipe, "STOP");
 	zre_interface_destroy (&(self->interface));
 	zsocket_destroy (self->ctx, self->pipe);
-	zctx_destroy (&self->ctx);
+	if(self->owns_ctx)
+		zctx_destroy (&self->ctx);
 	free(self);
 }
 
@@ -164,8 +175,17 @@ void lsd_publish(lsd_handle_t* self, const char* filename)
 	short_name = basename(full_name);
 	snprintf(virtual_name, sizeof(virtual_name), "/%s", short_name);
 
-	debugLog("FILE = %s ABSOLUTE = %s VIRTUAL = %s", filename, full_name, virtual_name);
 	zre_interface_publish (self->interface, full_name, virtual_name);
+}
+
+//  ---------------------------------------------------------------------
+//  Retract file
+void lsd_retract(lsd_handle_t* self, const char* filename) 
+{
+	assert(self);
+	assert(filename);
+
+	zre_interface_retract (self->interface, (char*)filename);
 }
 
 static void interface_task (void *args, zctx_t *ctx, void *pipe )

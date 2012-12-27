@@ -61,7 +61,7 @@ typedef void (lsd_callback_fn)
 
 
 // Init node, announce to network
-lsd_handle_t* lsd_init(lsd_callback_fn* fn, void* reserved);
+lsd_handle_t* lsd_init(void* ctx, lsd_callback_fn* fn, void* reserved);
 
 // Destroy node
 void lsd_destroy(lsd_handle_t* handle);
@@ -80,6 +80,9 @@ void lsd_shout(lsd_handle_t* self, const char* group, const uint8_t* msg, size_t
 
 // Publish a file to everyone
 void lsd_publish(lsd_handle_t* self, const char* filename);
+
+// Retract a publication
+void lsd_retract(lsd_handle_t* self, const char* filename);
 
 #ifdef __cplusplus
 }
