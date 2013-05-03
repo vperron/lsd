@@ -52,7 +52,7 @@ extern "C" {
 struct _lsd_handle_t {
 	zctx_t* ctx;
 	bool owns_ctx;
-	zre_interface_t* interface;
+	zre_node_t* interface;
 	void* pipe;
 	lsd_callback_fn* callback;
 	void* class_ptr;
@@ -78,7 +78,7 @@ lsd_handle_t* lsd_init(void* ctx, lsd_callback_fn* fn, void* reserved)
 		self->owns_ctx = false;
 	}
 	
-	self->interface = zre_interface_new();
+	self->interface = zre_node_new();
 	self->pipe = zthread_fork (self->ctx, interface_task, self);
 	self->class_ptr = reserved;
 	return self;
@@ -92,7 +92,7 @@ void lsd_destroy(lsd_handle_t* self)
 	assert(self);
 
 	zstr_send (self->pipe, "STOP");
-	zre_interface_destroy (&(self->interface));
+	zre_node_destroy (&(self->interface));
 	zsocket_destroy (self->ctx, self->pipe);
 	if(self->owns_ctx)
 		zctx_destroy (&self->ctx);
@@ -105,7 +105,7 @@ void lsd_join(lsd_handle_t* self, const char* group)
 {
 	assert(self);
 	assert(group);
-  zre_interface_join(self->interface, group);
+  zre_node_join(self->interface, group);
 }
 
 //  ---------------------------------------------------------------------
@@ -114,7 +114,7 @@ void lsd_leave(lsd_handle_t* self, const char* group)
 {
 	assert(self);
 	assert(group);
-	zre_interface_leave(self->interface, group);
+	zre_node_leave(self->interface, group);
 }
 
 //  ---------------------------------------------------------------------
@@ -129,7 +129,7 @@ void lsd_shout(lsd_handle_t* self, const char* group, const uint8_t * msg, size_
 	if(msg && len) {
 		zmsg_addmem(outgoing, msg, len);
 	}
-	zre_interface_shout(self->interface, &outgoing);
+	zre_node_shout(self->interface, &outgoing);
 	zmsg_destroy(&outgoing);
 }
 
@@ -145,7 +145,7 @@ void lsd_whisper(lsd_handle_t* self, const char* peer, const uint8_t * msg, size
 	if(msg && len) {
 		zmsg_addmem(outgoing, msg, len);
 	}
-	zre_interface_shout(self->interface, &outgoing);
+	zre_node_shout(self->interface, &outgoing);
 	zmsg_destroy(&outgoing);
 }
 
@@ -175,7 +175,7 @@ void lsd_publish(lsd_handle_t* self, const char* filename)
 	short_name = basename(full_name);
 	snprintf(virtual_name, sizeof(virtual_name), "/%s", short_name);
 
-	zre_interface_publish (self->interface, full_name, virtual_name);
+	zre_node_publish (self->interface, full_name, virtual_name);
 }
 
 //  ---------------------------------------------------------------------
@@ -185,7 +185,7 @@ void lsd_retract(lsd_handle_t* self, const char* filename)
 	assert(self);
 	assert(filename);
 
-	zre_interface_retract (self->interface, (char*)filename);
+	zre_node_retract (self->interface, (char*)filename);
 }
 
 static void interface_task (void *args, zctx_t *ctx, void *pipe )
@@ -200,7 +200,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 
 	zmq_pollitem_t pollitems [] = {
 		{ pipe,                             0, ZMQ_POLLIN, 0 },
-		{ zre_interface_handle (self->interface), 0, ZMQ_POLLIN, 0 }
+		{ zre_node_handle (self->interface), 0, ZMQ_POLLIN, 0 }
 	};
 
 	while (!zctx_interrupted) {
@@ -216,7 +216,7 @@ static void interface_task (void *args, zctx_t *ctx, void *pipe )
 
 		//  Process an event from interface
 		if (pollitems [1].revents & ZMQ_POLLIN) {
-			zmsg_t *incoming = zre_interface_recv (self->interface);
+			zmsg_t *incoming = zre_node_recv (self->interface);
 			if (!incoming) {
 				debugLog ("I: Interrupted before end of read.\n");
 				break;              //  Interrupted
